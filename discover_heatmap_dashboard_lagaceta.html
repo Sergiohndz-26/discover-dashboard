@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa de calor editorial — Google Discover · La Gaceta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #111318;
+  --ink-mid: #3a4452;
+  --ink-muted: #6b7a8e;
+  --ink-faint: #a8b4c2;
+  --bg: #f2f4f7;
+  --bg-card: #ffffff;
+  --bg-alt: #eaecf0;
+  --rule: #dde2e8;
+  --blue-900: #0a2540;
+  --blue-800: #0c3460;
+  --blue-700: #185FA5;
+  --blue-600: #2a7fcf;
+  --blue-400: #6aaee8;
+  --blue-100: #deeaf8;
+  --blue-50: #eef5fc;
+  --serif: 'Lora', Georgia, serif;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --h0: #f0f2f5; --h0-t: #a8b4c2;
+  --h1: #cfe3f7; --h1-t: #0c3460;
+  --h2: #7ab8ef; --h2-t: #0a2540;
+  --h3: #185FA5; --h3-t: #ffffff;
+  --h4: #0a2540; --h4-t: #deeaf8;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.6;min-height:100vh}
+
+/* HEADER */
+.header{background:var(--blue-900);padding:1.75rem 2.5rem 1.5rem;border-bottom:3px solid var(--blue-700)}
+.header-eye{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--blue-400);text-transform:uppercase;margin-bottom:.4rem}
+.header-title{font-family:var(--serif);font-size:21px;font-weight:700;color:#fff;margin-bottom:.2rem}
+.header-meta{font-size:11px;color:var(--blue-400)}
+.header-meta span{margin-right:1.25rem}
+
+/* NAV TABS */
+.nav{background:var(--blue-800);display:flex;gap:2px;padding:0 2.5rem;border-bottom:1px solid rgba(255,255,255,.08)}
+.nav-tab{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue-400);padding:.65rem 1rem;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.nav-tab:hover{color:#fff}
+.nav-tab.active{color:#fff;border-bottom-color:var(--blue-400)}
+
+/* SHELL */
+.shell{max-width:1300px;margin:0 auto;padding:1.5rem 2rem 3rem}
+.section{display:none}
+.section.active{display:block}
+
+/* CONTROLS */
+.controls{display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center}
+.ctrl-label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ink-muted);text-transform:uppercase;margin-right:.15rem}
+.btn-group{display:flex;gap:3px;background:var(--bg-card);border:1px solid var(--rule);border-radius:6px;padding:3px}
+.btn{font-family:var(--sans);font-size:11px;font-weight:500;padding:5px 11px;border:none;border-radius:4px;cursor:pointer;background:transparent;color:var(--ink-muted);transition:background .15s,color .15s}
+.btn:hover{background:var(--bg-alt);color:var(--ink)}
+.btn.active{background:var(--blue-700);color:#fff}
+
+/* KPI */
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.25rem}
+.kpi{background:var(--bg-card);border:1px solid var(--rule);border-radius:8px;padding:.875rem 1rem}
+.kpi-label{font-size:10px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.kpi-val{font-family:var(--serif);font-size:19px;font-weight:700;color:var(--blue-800);margin-bottom:2px}
+.kpi-sub{font-size:10px;color:var(--ink-faint);line-height:1.4}
+
+/* CARD */
+.card{background:var(--bg-card);border:1px solid var(--rule);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.card-head{padding:.7rem 1.25rem;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card-title{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;color:var(--ink-muted);text-transform:uppercase}
+.card-hint{font-size:10px;color:var(--ink-faint)}
+.card-body{padding:1.1rem 1.25rem}
+
+/* LAYOUT */
+.two-col{display:grid;grid-template-columns:1fr 310px;gap:14px;margin-bottom:14px}
+.three-col{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px}
+
+/* HEATMAP */
+.hm-wrap{overflow-x:auto}
+.hm-table{width:100%;border-collapse:separate;border-spacing:4px}
+.hm-table th{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--ink-muted);text-align:center;padding:4px 4px 8px;letter-spacing:.04em;white-space:nowrap}
+.hm-table th.cat-th{text-align:left;width:148px}
+.hm-table td{padding:2px}
+.hm-table td.cat-td{font-size:11px;font-weight:500;color:var(--ink-mid);padding:2px 8px 2px 0;white-space:nowrap;vertical-align:middle}
+.hm-cell{border-radius:5px;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:default;transition:transform .1s,box-shadow .1s;position:relative}
+.hm-cell:hover{transform:scale(1.06);box-shadow:0 2px 10px rgba(0,0,0,.14);z-index:2}
+.lvl-0{background:var(--h0)}.lvl-1{background:var(--h1)}.lvl-2{background:var(--h2)}.lvl-3{background:var(--h3)}.lvl-4{background:var(--h4)}
+.cell-hour{font-family:var(--mono);font-size:9px;font-weight:500;line-height:1}
+.cell-lbl{font-size:9px;line-height:1}
+.lvl-0 .cell-hour,.lvl-0 .cell-lbl{color:var(--h0-t)}
+.lvl-1 .cell-hour,.lvl-1 .cell-lbl{color:var(--h1-t)}
+.lvl-2 .cell-hour,.lvl-2 .cell-lbl{color:var(--h2-t)}
+.lvl-3 .cell-hour,.lvl-3 .cell-lbl{color:var(--h3-t)}
+.lvl-4 .cell-hour,.lvl-4 .cell-lbl{color:var(--h4-t)}
+.turno-hd{display:flex;align-items:center;gap:8px;padding:.5rem 0 .25rem}
+.t-badge{font-family:var(--mono);font-size:10px;font-weight:500;padding:3px 10px;border-radius:4px;letter-spacing:.04em}
+.t-mat{background:var(--blue-50);color:var(--blue-700);border:1px solid var(--blue-100)}
+.t-ves{background:#fdf3e6;color:#7a4210;border:1px solid #f5d9aa}
+.legend{display:flex;align-items:center;gap:12px;margin-top:.875rem;padding-top:.75rem;border-top:1px solid var(--rule);flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ink-muted)}
+.leg-sq{width:13px;height:13px;border-radius:3px;flex-shrink:0}
+
+/* RANKING */
+.rank-list{list-style:none}
+.rank-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--rule)}
+.rank-item:last-child{border-bottom:none}
+.rank-num{font-family:var(--mono);font-size:11px;color:var(--ink-faint);min-width:18px;text-align:right}
+.rank-cat{font-size:12px;font-weight:500;color:var(--ink);flex:1}
+.rank-bar-wrap{width:72px;height:4px;background:var(--bg-alt);border-radius:2px;overflow:hidden}
+.rank-bar{height:100%;background:var(--blue-600);border-radius:2px}
+.rank-score{font-family:var(--mono);font-size:10px;color:var(--ink-muted);min-width:22px;text-align:right}
+
+/* COMPARATIVA */
+.comp-col-hd{font-family:var(--mono);font-size:10px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:1px solid var(--rule)}
+.comp-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--rule);font-size:12px}
+.comp-item:last-child{border-bottom:none}
+.comp-cat{color:var(--ink-mid)}
+.cpill{font-size:10px;padding:2px 8px;border-radius:3px;font-weight:500}
+.cpill-hi{background:var(--h3);color:#fff}.cpill-mid{background:var(--h2);color:var(--blue-900)}.cpill-lo{background:var(--h1);color:var(--blue-900)}.cpill-no{background:var(--h0);color:var(--h0-t);border:1px solid var(--rule)}
+
+/* RECOMENDACIONES */
+.rec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.rec-card{background:var(--bg-card);border:1px solid var(--rule);border-radius:8px;padding:.9rem 1.1rem;border-left:3px solid var(--blue-700)}
+.rec-turno{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px}
+.rec-title{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:5px;line-height:1.4}
+.rec-body{font-size:11px;color:var(--ink-muted);line-height:1.55}
+
+/* TOP POSTS TABLE */
+.posts-table{width:100%;border-collapse:collapse;font-size:12px}
+.posts-table th{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--ink-muted);text-align:left;padding:4px 8px 10px;border-bottom:1px solid var(--rule);white-space:nowrap;letter-spacing:.04em}
+.posts-table th.num{width:30px;text-align:center}
+.posts-table th.vis-col{width:90px;text-align:right}
+.posts-table th.tof-col{width:80px;text-align:right}
+.posts-table th.cat-col{width:130px}
+.posts-table td{padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+.posts-table tr:last-child td{border-bottom:none}
+.posts-table tr:nth-child(even) td{background:#fafbfc}
+.td-num{text-align:center;font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+.td-title{font-size:12px;color:var(--ink);line-height:1.45}
+.td-vis{text-align:right;font-family:var(--mono);font-size:11px;font-weight:500;color:var(--blue-700);white-space:nowrap}
+.td-tof{text-align:right;font-family:var(--mono);font-size:11px;color:var(--ink-muted);white-space:nowrap}
+.cat-pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:3px;font-weight:500;white-space:nowrap}
+
+/* PERMANENCIA MODULE */
+.perm-table{width:100%;border-collapse:collapse;font-size:12px}
+.perm-table th{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--ink-muted);text-align:left;padding:4px 8px 10px;border-bottom:1px solid var(--rule);letter-spacing:.04em}
+.perm-table th.r{text-align:right}
+.perm-table td{padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:middle;font-size:12px}
+.perm-table tr:nth-child(even) td{background:#fafbfc}
+.perm-table tr:last-child td{border-bottom:none}
+.perm-bar-wrap{width:120px;height:5px;background:var(--bg-alt);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+.perm-bar{height:100%;border-radius:3px}
+
+/* CLIMA TABLE */
+.clima-table{width:100%;border-collapse:collapse;font-size:12px}
+.clima-table th{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--ink-muted);padding:4px 8px 10px;border-bottom:1px solid var(--rule);letter-spacing:.04em;white-space:nowrap}
+.clima-table th:first-child{text-align:left}
+.clima-table th:not(:first-child){text-align:right}
+.clima-table td{padding:7px 8px;border-bottom:1px solid var(--rule);font-size:12px}
+.clima-table td:first-child{color:var(--ink-mid);font-weight:500}
+.clima-table td:not(:first-child){text-align:right;font-family:var(--mono);font-size:11px}
+.clima-table tr:nth-child(even) td{background:#fafbfc}
+.clima-table tr:last-child td{border-bottom:none}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+
+/* SEÑALES */
+.signals-table{width:100%;border-collapse:collapse;font-size:12px}
+.signals-table th{font-family:var(--mono);font-size:10px;font-weight:500;color:var(--ink-muted);text-align:left;padding:4px 8px 10px;border-bottom:1px solid var(--rule);letter-spacing:.04em}
+.signals-table td{padding:7px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+.signals-table tr:nth-child(even) td{background:#fafbfc}
+.signals-table tr:last-child td{border-bottom:none}
+.cons-pill{font-size:10px;padding:2px 8px;border-radius:3px;font-weight:500}
+
+/* TOOLTIP */
+.tooltip{position:fixed;background:var(--blue-900);color:#fff;padding:8px 12px;border-radius:6px;font-size:11px;pointer-events:none;opacity:0;transition:opacity .15s;z-index:999;max-width:230px;line-height:1.5;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.tooltip.visible{opacity:1}
+.tt-title{font-weight:600;margin-bottom:3px;font-size:12px}
+.tt-detail{color:var(--blue-400);font-family:var(--mono);font-size:10px}
+
+/* FOOTER */
+.footer{font-family:var(--mono);font-size:10px;color:var(--ink-faint);border-top:1px solid var(--rule);padding-top:1rem;margin-top:1rem;display:flex;justify-content:space-between}
+
+.hidden{display:none!important}
+@media(max-width:900px){
+  .two-col,.three-col{grid-template-columns:1fr}
+  .kpi-strip{grid-template-columns:repeat(2,1fr)}
+  .rec-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eye">Marfeel Discover Monitoring · La Gaceta (lagaceta.com.ar) · Latam</div>
+  <div class="header-title">Mapa de calor editorial — Google Discover Argentina</div>
+  <div class="header-meta">
+    <span>Matutino 07–13h · Vespertino 14–21h</span>
+    <span>Uso interno · equipo editorial La Gaceta</span>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="nav-tab active" onclick="showSection('heatmap',this)">Mapa de calor ARG + Gaceta</div>
+  <div class="nav-tab" onclick="showSection('recs',this)">Recomendaciones</div>
+  <div class="nav-tab" onclick="showSection('toposts',this)">Top posts La Gaceta</div>
+  <div class="nav-tab" onclick="showSection('permanencia',this)">Permanencia en feed La Gaceta</div>
+  <div class="nav-tab" onclick="showSection('senales',this)">Comportamiento La Gaceta</div>
+</div>
+
+<div class="shell">
+
+<!-- ═══════════════════════════════════════════════════════════ HEATMAP -->
+<div class="section active" id="sec-heatmap">
+
+  <div class="controls" style="margin-top:1.25rem">
+    <span class="ctrl-label">Turno:</span>
+    <div class="btn-group">
+      <button class="btn active" id="btn-ambos" onclick="setTurno('ambos')">Ambos</button>
+      <button class="btn" id="btn-mat" onclick="setTurno('mat')">Matutino</button>
+      <button class="btn" id="btn-ves" onclick="setTurno('ves')">Vespertino</button>
+    </div>
+    <span class="ctrl-label" style="margin-left:.5rem">Día:</span>
+    <div class="btn-group">
+      <button class="btn active" id="btn-all" onclick="setDay('all')">Todos</button>
+      <button class="btn" id="btn-lun" onclick="setDay('lun')">Lun</button>
+      <button class="btn" id="btn-mar" onclick="setDay('mar')">Mar</button>
+      <button class="btn" id="btn-mie" onclick="setDay('mie')">Mié</button>
+      <button class="btn" id="btn-jue" onclick="setDay('jue')">Jue</button>
+      <button class="btn" id="btn-vie" onclick="setDay('vie')">Vie</button>
+      <button class="btn" id="btn-sab" onclick="setDay('sab')">Sáb</button>
+      <button class="btn" id="btn-dom" onclick="setDay('dom')">Dom</button>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Tracción por categoría · día · turno</span>
+        <span class="card-hint">Hover sobre cada celda para detalle · Datos: 88 posts · últimos 30 días</span>
+      </div>
+      <div class="card-body">
+        <div class="hm-wrap">
+          <div id="hm-mat-hd" class="turno-hd"><span class="t-badge t-mat">☀ MATUTINO · 07–13h</span></div>
+          <table class="hm-table" id="hm-mat-tbl">
+            <thead><tr><th class="cat-th">Categoría</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th></tr></thead>
+            <tbody id="hm-mat-body"></tbody>
+          </table>
+          <div id="hm-ves-hd" class="turno-hd" style="margin-top:1.25rem"><span class="t-badge t-ves">☾ VESPERTINO · 14–21h</span></div>
+          <table class="hm-table" id="hm-ves-tbl">
+            <thead><tr><th class="cat-th">Categoría</th><th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th></tr></thead>
+            <tbody id="hm-ves-body"></tbody>
+          </table>
+        </div>
+        <div class="legend">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.05em;text-transform:uppercase;margin-right:4px">Intensidad:</span>
+          <span class="leg-item"><span class="leg-sq" style="background:var(--h0);border:1px solid var(--rule)"></span>Sin señal</span>
+          <span class="leg-item"><span class="leg-sq" style="background:var(--h1)"></span>Baja</span>
+          <span class="leg-item"><span class="leg-sq" style="background:var(--h2)"></span>Media</span>
+          <span class="leg-item"><span class="leg-sq" style="background:var(--h3)"></span>Alta</span>
+          <span class="leg-item"><span class="leg-sq" style="background:var(--h4)"></span>Máxima</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-title">Ranking de categorías</span></div>
+      <div class="card-body" style="padding:.75rem 1.25rem">
+        <ul class="rank-list" id="rank-list"></ul>
+        <div style="margin-top:1rem;padding-top:.75rem;border-top:1px solid var(--rule)">
+          <div class="comp-col-hd" style="margin-bottom:.75rem">Matutino vs. Vespertino</div>
+          <div id="comp-left"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ TOP POSTS -->
+<div class="section" id="sec-toposts">
+  <div style="margin-top:1.25rem">
+    <div class="controls">
+      <span class="ctrl-label">Categoría:</span>
+      <div class="btn-group" id="cat-filter">
+        <button class="btn active" onclick="filterPosts('todas',this)">Todas</button>
+        <button class="btn" onclick="filterPosts('meteorologia',this)">Meteorología</button>
+        <button class="btn" onclick="filterPosts('judicial',this)">Judicial</button>
+        <button class="btn" onclick="filterPosts('economia',this)">Economía</button>
+        <button class="btn" onclick="filterPosts('gastronomia',this)">Gastronomía</button>
+        <button class="btn" onclick="filterPosts('salud',this)">Salud</button>
+        <button class="btn" onclick="filterPosts('local',this)">Local NOA</button>
+        <button class="btn" onclick="filterPosts('evergreen',this)">Evergreen</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Top posts La Gaceta · últimos 30 días · por visibilidad</span>
+        <span class="card-hint">Fuente: Marfeel Discover Monitoring · corte 18 mayo 2026</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="posts-table">
+          <thead><tr>
+            <th class="num">#</th>
+            <th>Titular</th>
+            <th class="cat-col">Categoría</th>
+            <th class="vis-col">Visibilidad</th>
+            <th class="tof-col">Time on feed</th>
+          </tr></thead>
+          <tbody id="posts-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ PERMANENCIA -->
+<div class="section" id="sec-permanencia">
+  <div style="margin-top:1.25rem">
+    <div class="three-col">
+      <div class="kpi">
+        <div class="kpi-label">Mayor permanencia</div>
+        <div class="kpi-val">1d 18h 3m</div>
+        <div class="kpi-sub">Mercado del Norte · apertura agosto · 391K vis.</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Categoría más duradera</div>
+        <div class="kpi-val">Evergreen local</div>
+        <div class="kpi-sub">Promedio 12–19h en feed. Contenido no atado a fecha</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Clima: permanencia promedio</div>
+        <div class="kpi-val">5h 40m</div>
+        <div class="kpi-sub">Con alertas activas: hasta 12h. Sin evento: 3–5h</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Posts con mayor permanencia en feed · Top 25</span>
+        <span class="card-hint">Time on feed = tiempo que el post permaneció activo en el feed de Discover</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="perm-table">
+          <thead><tr>
+            <th style="width:30px;text-align:center">#</th>
+            <th>Titular</th>
+            <th style="width:120px">Categoría</th>
+            <th class="r" style="width:110px">Time on feed</th>
+            <th class="r" style="width:90px">Visibilidad</th>
+          </tr></thead>
+          <tbody id="perm-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">Permanencia por categoría — promedio y máximo</span></div>
+      <div class="card-body" style="padding:0">
+        <table class="perm-table">
+          <thead><tr>
+            <th>Categoría</th>
+            <th class="r">Promedio</th>
+            <th class="r">Máximo</th>
+            <th class="r" style="width:200px">Distribución relativa</th>
+            <th class="r">Posts</th>
+          </tr></thead>
+          <tbody id="perm-cat-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ CLIMA -->
+<div class="section" id="sec-clima">
+  <div style="margin-top:1.25rem">
+    <div class="three-col">
+      <div class="kpi">
+        <div class="kpi-label">Posts de clima en 30 días</div>
+        <div class="kpi-val">28</div>
+        <div class="kpi-sub">Meteorología: categoría con mayor volumen de posts</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Mejor post de clima</div>
+        <div class="kpi-val">906K</div>
+        <div class="kpi-sub">Alerta naranja y amarilla · martes · 11h 24m en feed</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Patrón "cómo estará el tiempo"</div>
+        <div class="kpi-val">15 posts</div>
+        <div class="kpi-sub">Visibilidad promedio: 107K · Rango: 41K–223K</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Visibilidad de posts de clima por día de la semana</span>
+          <span class="card-hint">Solo posts con fecha explícita en el titular</span>
+        </div>
+        <div class="card-body" style="padding:0">
+          <table class="clima-table">
+            <thead><tr>
+              <th>Día</th>
+              <th>Posts</th>
+              <th>Vis. promedio</th>
+              <th>Vis. máxima</th>
+              <th>Time on feed prom.</th>
+            </tr></thead>
+            <tbody id="clima-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">Tipos de post meteorológico</span></div>
+        <div class="card-body" style="padding:0">
+          <table class="clima-table">
+            <thead><tr>
+              <th>Tipo</th>
+              <th>Posts</th>
+              <th>Vis. prom.</th>
+              <th>Prom. feed</th>
+            </tr></thead>
+            <tbody id="clima-tipo-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ SEÑALES -->
+<div class="section" id="sec-senales">
+  <div style="margin-top:1.25rem">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Señales recurrentes — temas con presencia sostenida · últimos 30 días</span>
+        <span class="card-hint">Basado en 88 posts de La Gaceta con datos reales de visibilidad y permanencia</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="signals-table">
+          <thead><tr>
+            <th style="width:150px">Categoría</th>
+            <th>Comportamiento observado</th>
+            <th style="width:130px">Turno óptimo</th>
+            <th>Patrón de titular confirmado</th>
+            <th style="width:90px;text-align:center">Consistencia</th>
+          </tr></thead>
+          <tbody id="signals-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ RECOMENDACIONES -->
+<div class="section" id="sec-recs">
+  <div style="margin-top:1.25rem">
+    <div class="rec-grid" id="rec-grid"></div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">Oportunidades detectadas en los datos — sin cobertura o subcobertura</span></div>
+      <div class="card-body" style="padding:0">
+        <table class="signals-table">
+          <thead><tr>
+            <th style="width:170px">Oportunidad</th>
+            <th>Evidencia en los datos</th>
+            <th style="width:160px">Acción editorial</th>
+            <th style="width:110px;text-align:center">Prioridad</th>
+          </tr></thead>
+          <tbody id="opp-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span>Fuente: Marfeel Discover Monitoring · lagaceta.com.ar</span>
+  <span>Uso interno · equipo editorial La Gaceta</span>
+</div>
+</div><!-- /shell -->
+
+<div class="tooltip" id="tooltip"><div class="tt-title" id="tt-title"></div><div class="tt-detail" id="tt-detail"></div></div>
+
+<script>
+// ─── DATOS HEATMAP ────────────────────────────────────────────────────────────
+const CATS = [
+  "Meteorología","Judicial / Policial","Psicología","Salud / Hábitos",
+  "Economía / ANSES","Turismo / Cultura NOA","Gastronomía / Recetas",
+  "Utilidad / Regulaciones","Evergreen local","Autos / Consumo"
+];
+const DAYS = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+const DAY_IDS = ["lun","mar","mie","jue","vie","sab","dom"];
+const LVL_L = ["—","Baja","Media","Alta","Máxima"];
+
+// Actualizado con datos reales de 88 posts últimos 30 días
+// [nivel 0-4, "hora óptima", "nota tooltip"]
+const MAT = [
+  {s:[2,4,3,2,3,2,1],h:["08–09h","08–09h","08–10h","08–09h","08–09h","08–09h","09–10h"],
+   n:["Alertas geo+fecha. Pico medio","Martes: alertas nacionales dominan. 906K registrado","Tormentas y granizo. Post pico período","Media. Sin alertas activas fijas","Alertas fin de semana largo. Heladas NOA","Franja irregular. Menor tráfico","Menor demanda. Tráfico tardío"]},
+  {s:[3,3,3,2,2,0,1],h:["08–10h","08–10h","09–11h","09–10h","09–11h","—","10h"],
+   n:["Fallos y decretos. Pico lunes","Martes pico judicial. Caso Corte Suprema 1,22M","Sesiones y resoluciones. Alta señal","Media. Sin eventos legislativos fijos","Cierre semana político. Media","Sin señal consistente","Baja. Esporádico"]},
+  {s:[2,2,1,2,2,1,2],h:["09–10h","09–11h","10h","09–11h","09–10h","09–10h","09–11h"],
+   n:["Evergreen. Crianza y validación","Alta. Citas psicológicas","Menor tracción. Presente","Citas de autoridad activas","Motivación y hábitos fin semana","Presente. Audiencia amplia","Evergreen tarde. Mayor permanencia"]},
+  {s:[2,1,2,1,1,1,1],h:["09–11h","10h","09–11h","10h","10h","09–10h","10–11h"],
+   n:["Hábitos 65+. Piernas y calzado. 459K","Menor señal","Nutrición concreta. Alta promesa de valor","Baja. Contenido genérico","Media semana baja","Presente menor volumen","Evergreen salud. Baja competencia"]},
+  {s:[3,2,1,3,2,0,0],h:["09–10h","09–10h","10h","09–10h","09–10h","—","—"],
+   n:["Vouchers, jubilaciones. Pico lunes","Salarios, plazo fijo, ajustes. 294K","Menor tracción sin anuncios","Cobros quincenales. Pico jueves. Aguinaldo","Balance semana. Precios consumidor","Sin señal","Sin señal"]},
+  {s:[1,1,1,1,2,3,3],h:["10–11h","10h","11h","10h","10–11h","09–11h","09–11h"],
+   n:["Baja semana. Audiencia laboral","Baja. Poca demanda ocio","Presente sin picos","Pre-fin de semana. Ligero aumento","Turismo NOA activo. 390K UNESCO","Pico. Destinos y gastronomía regional","Máxima. Planes y actividades locales"]},
+  {s:[1,1,1,1,1,2,2],h:["10–11h","10h","10–11h","10h","10–11h","09–10h","09–11h"],
+   n:["Evergreen. Recetas con producto regional","Chefs con nombre. Cita con técnica concreta. 608K","Presente. Menor tráfico laboral","Baja. Audiencia reducida","Pre-fin de semana. Recetas reunión","Mayor demanda. Recetas fin de semana","Pico gastronomía. Cocinar en casa"]},
+  {s:[2,2,2,1,1,0,0],h:["08–10h","08–09h","08–09h","09h","09h","—","—"],
+   n:["Regulaciones, nafta, trámites. Alta demanda mañana","Alta demanda matutina info práctica","Trámites y regulaciones. 40K alerta tormentas","Baja. Sin anuncios regulatorios","Cierre. Menor demanda","Sin señal","Sin señal"]},
+  {s:[1,2,2,2,2,3,3],h:["10–11h","10h","10h","10h","10h","09–11h","09–11h"],
+   n:["Baja semana. Contenido local puro","Alta. Maratón Boston tucumano. 100K. Local con alcance nacional","Alta. Museo de Arte Tucumán. 197K. 1d1h feed","Alta. Caracoles africanos Tucumán. 101K","Alta. Ruta Norte 3800m. 112K","Máxima. NOA Patrimonio UNESCO. 390K. Tafí del Valle","Máxima. Destinos y turismo local NOA. Planes fin de semana"]},
+  {s:[1,0,2,1,1,0,0],h:["10h","—","09–10h","10h","10h","—","—"],
+   n:["Baja. Sin lanzamientos activos","Sin señal","Media. Lanzamientos y comparativas","Precios y costos. Media","Cierre semana. Comparativas","Sin señal","Sin señal"]}
+];
+
+const VES = [
+  {s:[1,1,2,1,2,1,1],h:["17–18h","17h","16–18h","17h","16–17h","17h","17h"],
+   n:["Alertas activas. Menor impacto que matutino","Presente. Sin alertas nuevas","Pico miércoles. Tormentas y granizo","Baja. Ciclo alerta normalizado","Alertas fin de semana. Media","Presente. Sin pico consistente","Baja. Sin novedades"]},
+  {s:[2,3,2,2,1,0,0],h:["17–19h","17–19h","17–18h","17–18h","17h","—","—"],
+   n:["Análisis del día. Decretos en proceso","Martes pico. Fallos publicados al cierre","Media. Continuidad temas del día","Análisis y balance de sesiones","Cierre político semanal. Baja","Sin señal","Sin señal"]},
+  {s:[3,3,3,3,3,2,2],h:["17–19h","17–19h","17–18h","17–19h","17–18h","17–18h","17–19h"],
+   n:["Máxima. Hábitos, crianza, validación","Pico máximo. Citas autoridad psicológica","Alta tracción. Evergreen de tarde","Alta consistencia. Citas de médicos y psicólogos","Alta. Cierre semana motivacional","Media alta. Audiencia amplia","Evergreen tarde. Mayor permanencia"]},
+  {s:[2,2,2,2,2,1,1],h:["17–18h","17–18h","17–19h","17–18h","17–18h","17h","17h"],
+   n:["Hábitos digestivos y metabolismo","Alimentación 60+. Ayuno y descanso","Diabetes e hipertensión con números concretos","Prevención y hábitos. Media consistente","Salud activa toda la tarde semana","Menor tráfico fin de semana","Presente con baja intensidad"]},
+  {s:[1,1,1,1,1,0,0],h:["17h","17h","18h","17h","17h","—","—"],
+   n:["Balance económico del día. Baja","Ajustes menores. Poca demanda vespertina","Menor señal. Audiencia en descenso","Baja. Economía no lidera en tarde","Cierre semanal. Baja tracción","Sin señal","Sin señal"]},
+  {s:[2,2,2,3,3,3,3],h:["17–19h","17–18h","17–19h","17–19h","17–19h","16–19h","16–19h"],
+   n:["Media. Planes de semana y salidas","Media. Agenda cultural y gastronomía","Media alta. Pre-fin de semana activa","Alta. Turismo NOA y destinos regionales","Alta. Jueves-viernes mayor demanda escapadas","Máxima. Actividades y planes fin de semana","Máxima. Destinos, gastronomía, actividades NOA"]},
+  {s:[2,2,2,2,2,3,3],h:["17–19h","17–18h","17–19h","17–18h","17–19h","16–19h","16–19h"],
+   n:["Recetas de cena. Activo toda la semana","Chefs y técnicas. Formato cita activo","Gastronomía regional. Limón, humita. 608K mat","Media. Audiencia de cocina activa","Pre-fin de semana. Recetas de reunión","Pico gastronomía. 425K panqueques sin harinas","Máxima. Planes gastronómicos y turismo NOA"]},
+  {s:[1,1,1,0,0,0,0],h:["17h","17h","17h","—","—","—","—"],
+   n:["Baja. Utilidad se consume en mañana","Baja. Menor demanda vespertina","Baja. Contenido mañana agota el tema","Sin señal","Sin señal","Sin señal","Sin señal"]},
+  {s:[2,2,2,2,2,3,3],h:["17–19h","17–18h","17–19h","17–19h","17–19h","16–19h","16–19h"],
+   n:["Media. Contenido local no atado a fecha","Alta. Local con alcance nacional. 100K+ Maratón","Alta. Museo, patrimonio. Temas de identidad","Alta. Caracoles africanos 101K. Peculiaridad local","Alta. Ruta espectacular Norte 112K","Máxima. Tafí, Tren Solidario, patrimonio NOA","Máxima. NOA turismo, cultura, gastronomía"]},
+  {s:[0,1,1,1,0,0,0],h:["—","17h","17h","17h","—","—","—"],
+   n:["Sin señal vespertina lunes","Baja. Precios y comparativas","Leve. Post-anuncio","Media-baja. Precios y costos","Sin señal","Sin señal","Sin señal"]}
+];
+
+// ─── TOP POSTS ────────────────────────────────────────────────────────────────
+const POSTS = [
+  {t:"Tras cuatro meses de internación, recibió el alta la niña hallada en una pileta en Cruz Alta",cat:"local",clabel:"Local NOA",vis:"1,78M",tof:"8h 15m"},
+  {t:"Fallo de la Corte Suprema: una empresa láctea le ganó una demanda a la provincia de Buenos Aires",cat:"judicial",clabel:"Judicial",vis:"1,22M",tof:"1d 3h 12m"},
+  {t:"Escultura a Don Rojas: la Municipalidad señaló que se trató de un accidente y que será restaurada pronto",cat:"local",clabel:"Local NOA",vis:"1,08M",tof:"13h 47m"},
+  {t:"Forbes: por primera vez en tres años, las 10 personas más ricas del mundo son todas estadounidenses",cat:"evergreen",clabel:"Evergreen",vis:"1,01M",tof:"10h 19m"},
+  {t:"Hervir hojas de laurel con bicarbonato: para qué sirve y por qué lo recomiendan",cat:"salud",clabel:"Salud / Hábitos",vis:"2,59M",tof:"1d 1h 19m"},
+  {t:"Alerta naranja y amarilla: tormentas, viento zonda y lluvia intensa afectarán este martes al país",cat:"meteorologia",clabel:"Meteorología",vis:"906K",tof:"11h 24m"},
+  {t:"\"Tribuna Segura\": detectaron en el estadio de San Martín a una mujer que era buscada desde 2022",cat:"judicial",clabel:"Judicial / Policial",vis:"813K",tof:"5h 22m"},
+  {t:"Receta de pan árabe saludable: cómo hacer la versión alta en proteína para el desayuno",cat:"gastronomia",clabel:"Gastronomía",vis:"608K",tof:"6h 3m"},
+  {t:"Alerta por heladas y lluvias para el fin de semana largo: qué provincias sentirán más el cambio de tiempo",cat:"meteorologia",clabel:"Meteorología",vis:"593K",tof:"12h 50m"},
+  {t:"Ganó el 0 km de los Números de Oro y su primer viaje será al cementerio para agradecerle a su madre",cat:"evergreen",clabel:"Evergreen",vis:"543K",tof:"13h 19m"},
+  {t:"Las imágenes de una tragedia repetida: así se inundó La Madrid a lo largo de 34 años",cat:"local",clabel:"Local NOA",vis:"503K",tof:"5h 58m"},
+  {t:"Por qué a partir de los 65 años hay que fortalecer piernas, revisar el calzado y adaptar la casa",cat:"salud",clabel:"Salud / Hábitos",vis:"459K",tof:"7h 47m"},
+  {t:"Jóvenes de 18 hasta 35 años ya pueden inscribirse a programa de Capital Humano",cat:"economia",clabel:"Economía / ANSES",vis:"433K",tof:"1d 6h 17m"},
+  {t:"Desayunos saludables: cómo hacer panqueques sin harinas, con frutas y avena para tener más energía",cat:"gastronomia",clabel:"Gastronomía",vis:"425K",tof:"4h 36m"},
+  {t:"Cuatro escaleras mecánicas, terrazas al aire libre y un área cultural: cuándo abre el nuevo Mercado del Norte",cat:"local",clabel:"Local NOA",vis:"391K",tof:"1d 18h 3m"},
+  {t:"Montañas de pimientos y casas de adobe: la joya del Norte que resguarda un Patrimonio de la Humanidad",cat:"local",clabel:"Local NOA",vis:"390K",tof:"15h 15m"},
+  {t:"Falta poco para el aguinaldo 2026: cuándo se cobra, cómo calcularlo y quiénes recibirán el pago",cat:"economia",clabel:"Economía / ANSES",vis:"372K",tof:"6h 31m"},
+  {t:"Frente frío en Argentina: cuándo llegan las primeras heladas y cómo impactará el descenso de temperatura",cat:"meteorologia",clabel:"Meteorología",vis:"325K",tof:"3h 39m"},
+  {t:"Vouchers Educativos 2026: se cobra la cuota de mayo y cómo consultar el estado del pago",cat:"economia",clabel:"Economía / ANSES",vis:"311K",tof:"15h 9m"},
+  {t:"Cuánto cobran un albañil, un electricista y un plomero, por su trabajo, en mayo 2026",cat:"economia",clabel:"Economía / ANSES",vis:"294K",tof:"5h 22m"},
+  {t:"Los casos de estafas que dieron que hablar en los últimos días en Tucumán",cat:"judicial",clabel:"Judicial / Policial",vis:"271K",tof:"12h 11m"},
+  {t:"Se separan Gonzalo Heredia y Brenda Gandini: cómo es la casa estilo hippie chic construida juntos",cat:"evergreen",clabel:"Evergreen",vis:"256K",tof:"3h 37m"},
+  {t:"Un fiscal acudió a la Corte Suprema para intentar impedir que se le pague la pensión a Cristina Kirchner",cat:"judicial",clabel:"Judicial / Policial",vis:"245K",tof:"4h 15m"},
+  {t:"Investigan en Tucumán presuntas falsificaciones en una herencia millonaria",cat:"judicial",clabel:"Judicial / Policial",vis:"240K",tof:"17h 11m"},
+  {t:"¿Cómo estará el tiempo en Tucumán este miércoles 22 de abril?",cat:"meteorologia",clabel:"Meteorología",vis:"223K",tof:"11h 34m"},
+  {t:"El Gobierno impulsa una nueva Ley de Discapacidad: reempadronamiento y cambios en pensiones",cat:"economia",clabel:"Economía / ANSES",vis:"211K",tof:"1h 14m"},
+  {t:"Cómo estará el tiempo en Tucumán durante este fin de semana",cat:"meteorologia",clabel:"Meteorología",vis:"207K",tof:"9h 51m"},
+  {t:"Las mejores postales de la nevada en Tafí del Valle: frío extremo y paisajes teñidos de blanco",cat:"local",clabel:"Local NOA",vis:"203K",tof:"19h 4m"},
+  {t:"Un señorial edificio histórico se transforma y nace el Museo de Arte de Tucumán",cat:"local",clabel:"Local NOA",vis:"197K",tof:"1d 1h 31m"},
+  {t:"Polémica en Salta: el gobierno le otorgó al 'Chaqueño' Palavecino un subsidio vitalicio",cat:"judicial",clabel:"Judicial / Policial",vis:"191K",tof:"5h 41m"},
+  {t:"¿Cuándo se cobra el aguinaldo en junio 2026?: fechas y cómo calcular el monto",cat:"economia",clabel:"Economía / ANSES",vis:"187K",tof:"8h 24m"},
+  {t:"Del título al mercado: la UNT lanza un curso gratis para empezar a generar ingresos",cat:"local",clabel:"Local NOA",vis:"176K",tof:"10h 6m"},
+  {t:"El Gobierno nacional comienza las auditorías a pensionados",cat:"economia",clabel:"Economía / ANSES",vis:"162K",tof:"2h 13m"},
+  {t:"Cómo estará el tiempo en Tucumán este martes 21 de abril",cat:"meteorologia",clabel:"Meteorología",vis:"153K",tof:"6h 34m"},
+  {t:"El ingreso de un frente de frío polar podría provocar nevadas en Tafí del Valle",cat:"meteorologia",clabel:"Meteorología",vis:"151K",tof:"5h 30m"},
+  {t:"Acusan por estafa a miembros de una concesionaria de Yerba Buena",cat:"judicial",clabel:"Judicial / Policial",vis:"147K",tof:"12h 25m"},
+  {t:"Cómo estará el tiempo en Tucumán este jueves 7 de mayo",cat:"meteorologia",clabel:"Meteorología",vis:"144K",tof:"6h 9m"},
+  {t:"Préstamos de hasta $1.500.000: quiénes pueden acceder al financiamiento de Anses",cat:"economia",clabel:"Economía / ANSES",vis:"133K",tof:"5h 8m"},
+  {t:"Por una 'tormenta perfecta', se incrementan los casos de estafas en Tucumán",cat:"judicial",clabel:"Judicial / Policial",vis:"131K",tof:"9h 10m"},
+  {t:"Adorni convoca a Gabinete tras la declaración del arquitecto sobre las obras en su casa",cat:"judicial",clabel:"Judicial / Policial",vis:"127K",tof:"5h 6m"},
+  {t:"Brownie casero rico en magnesio: la receta fácil para un postre saludable",cat:"gastronomia",clabel:"Gastronomía",vis:"120K",tof:"4h 4m"},
+  {t:"Moda 2026: las 10 tendencias que marcarán la temporada de invierno",cat:"evergreen",clabel:"Evergreen",vis:"120K",tof:"1h 18m"},
+  {t:"Pronóstico del fin de semana del NOA: Jujuy, Salta, Catamarca, Santiago, La Rioja y Tucumán",cat:"meteorologia",clabel:"Meteorología",vis:"117K",tof:"5h 47m"},
+  {t:"La ruta más espectacular del Norte argentino está cerca de Tucumán: un tramo de ensueño a 3800 metros",cat:"local",clabel:"Local NOA",vis:"112K",tof:"9h 41m"},
+  {t:"Cuáles son las mejores razas de perros para vivir en casa, según especialistas",cat:"evergreen",clabel:"Evergreen",vis:"105K",tof:"3h 2m"},
+  {t:"Tiene 18 años, es de Alberdi y será la única argentina en una misión espacial en India",cat:"local",clabel:"Local NOA",vis:"103K",tof:"5h 56m"},
+  {t:"Cómo estará el tiempo en Tucumán este jueves 23 de abril",cat:"meteorologia",clabel:"Meteorología",vis:"101K",tof:"4h 56m"},
+  {t:"Preocupación en Tucumán: avanzan los caracoles africanos en la capital y ya son más de 1000 los detectados",cat:"local",clabel:"Local NOA",vis:"101K",tof:"8h 26m"},
+  {t:"Histórico: Un tucumano se consagró como el mejor argentino en la Maratón de Boston",cat:"local",clabel:"Local NOA",vis:"100K",tof:"10h 38m"},
+];
+
+// ─── PERMANENCIA ─────────────────────────────────────────────────────────────
+// Convertir tiempo on feed a minutos para ordenar
+function tofToMin(s){
+  const m = s.match(/(\d+)d\s*(\d+)h\s*(\d+)m/);
+  if(m) return parseInt(m[1])*1440+parseInt(m[2])*60+parseInt(m[3]);
+  const m2 = s.match(/(\d+)h\s*(\d+)m/);
+  if(m2) return parseInt(m2[1])*60+parseInt(m2[2]);
+  const m3 = s.match(/(\d+)m/);
+  if(m3) return parseInt(m3[1]);
+  return 0;
+}
+
+const PERM_POSTS = [
+  {t:"Cuatro escaleras mecánicas, terrazas al aire libre: cuándo abre el nuevo Mercado del Norte",cat:"Local NOA",tof:"1d 18h 3m",vis:"391K"},
+  {t:"Jóvenes de 18 hasta 35 años ya pueden inscribirse a programa de Capital Humano",cat:"Economía / ANSES",tof:"1d 6h 17m",vis:"433K"},
+  {t:"Hervir hojas de laurel con bicarbonato: para qué sirve y por qué lo recomiendan",cat:"Salud / Hábitos",tof:"1d 1h 19m",vis:"2,59M"},
+  {t:"Fallo de la Corte Suprema: empresa láctea vs. provincia de Buenos Aires",cat:"Judicial",tof:"1d 3h 12m",vis:"1,22M"},
+  {t:"Un señorial edificio histórico se transforma y nace el Museo de Arte de Tucumán",cat:"Local NOA",tof:"1d 1h 31m",vis:"197K"},
+  {t:"Las mejores postales de la nevada en Tafí del Valle",cat:"Local NOA",tof:"19h 4m",vis:"203K"},
+  {t:"Investigan en Tucumán presuntas falsificaciones en una herencia millonaria",cat:"Judicial",tof:"17h 11m",vis:"240K"},
+  {t:"Escultura a Don Rojas: la Municipalidad señaló que fue un accidente",cat:"Local NOA",tof:"13h 47m",vis:"1,08M"},
+  {t:"Ganó el 0 km de los Números de Oro y viajará al cementerio de su madre",cat:"Evergreen",tof:"13h 19m",vis:"543K"},
+  {t:"Los casos de estafas que dieron que hablar en los últimos días en Tucumán",cat:"Judicial",tof:"12h 11m",vis:"271K"},
+  {t:"Alerta por heladas y lluvias para el fin de semana largo",cat:"Meteorología",tof:"12h 50m",vis:"593K"},
+  {t:"Alerta naranja y amarilla: tormentas y lluvia intensa afectarán este martes",cat:"Meteorología",tof:"11h 24m",vis:"906K"},
+  {t:"¿Cómo estará el tiempo en Tucumán este miércoles 22 de abril?",cat:"Meteorología",tof:"11h 34m",vis:"223K"},
+  {t:"Forbes: las 10 personas más ricas del mundo son todas estadounidenses",cat:"Evergreen",tof:"10h 19m",vis:"1,01M"},
+  {t:"Histórico: Un tucumano se consagró mejor argentino en la Maratón de Boston",cat:"Local NOA",tof:"10h 38m",vis:"100K"},
+  {t:"Del título al mercado: la UNT lanza un curso gratis para generar ingresos",cat:"Local NOA",tof:"10h 6m",vis:"176K"},
+  {t:"La Terminal de ómnibus cierra una etapa de más de tres décadas",cat:"Local NOA",tof:"10h 13m",vis:"60K"},
+  {t:"Cómo estará el tiempo en Tucumán durante este fin de semana",cat:"Meteorología",tof:"9h 51m",vis:"207K"},
+  {t:"La ruta más espectacular del Norte argentino a 3800 metros",cat:"Local NOA",tof:"9h 41m",vis:"112K"},
+  {t:"Preocupación en Tucumán: avanzan los caracoles africanos",cat:"Local NOA",tof:"8h 26m",vis:"101K"},
+  {t:"Tras cuatro meses de internación, recibió el alta la niña hallada en Cruz Alta",cat:"Local NOA",tof:"8h 15m",vis:"1,78M"},
+  {t:"¿Cuándo se cobra el aguinaldo en junio 2026?: fechas y cómo calcular el monto",cat:"Economía / ANSES",tof:"8h 24m",vis:"187K"},
+  {t:"Por qué a partir de los 65 años hay que fortalecer piernas y adaptar la casa",cat:"Salud / Hábitos",tof:"7h 47m",vis:"459K"},
+  {t:"Cómo estará el tiempo en Tucumán este jueves 7 de mayo",cat:"Meteorología",tof:"6h 9m",vis:"144K"},
+  {t:"Receta de pan árabe saludable: alta en proteína para el desayuno",cat:"Gastronomía",tof:"6h 3m",vis:"608K"},
+];
+
+const PERM_CATS = [
+  {cat:"Local NOA",prom:"11h 40m",max:"1d 18h",posts:18,mins:700},
+  {cat:"Judicial / Policial",prom:"8h 20m",max:"1d 3h",posts:12,mins:500},
+  {cat:"Meteorología",prom:"5h 40m",max:"12h 50m",posts:28,mins:340},
+  {cat:"Evergreen",prom:"7h 10m",max:"13h 19m",posts:8,mins:430},
+  {cat:"Economía / ANSES",prom:"6h 15m",max:"1d 6h",posts:11,mins:375},
+  {cat:"Salud / Hábitos",prom:"5h 50m",max:"1d 1h",posts:5,mins:350},
+  {cat:"Gastronomía",prom:"5h 15m",max:"6h 3m",posts:3,mins:315},
+];
+
+// ─── CLIMA POR DÍA ────────────────────────────────────────────────────────────
+const CLIMA_DIAS = [
+  {dia:"Lunes",posts:3,prom:"98K",max:"325K",tof:"4h 50m",color:"#185FA5"},
+  {dia:"Martes",posts:4,prom:"194K",max:"906K",tof:"8h 30m",color:"#0a2540"},
+  {dia:"Miércoles",posts:3,prom:"105K",max:"223K",tof:"7h 20m",color:"#2a7fcf"},
+  {dia:"Jueves",posts:4,prom:"107K",max:"144K",tof:"5h 55m",color:"#6aaee8"},
+  {dia:"Viernes",posts:3,prom:"76K",max:"99K",tof:"5h 0m",color:"#cfe3f7"},
+  {dia:"Sábado",posts:3,prom:"98K",max:"207K",tof:"7h 20m",color:"#7ab8ef"},
+  {dia:"Domingo",posts:4,prom:"79K",max:"91K",tof:"5h 35m",color:"#cfe3f7"},
+];
+
+const CLIMA_TIPOS = [
+  {tipo:"Alerta activa (naranja/amarilla)",posts:7,prom:"248K",tof:"8h 30m"},
+  {tipo:"Cómo estará el tiempo + fecha",posts:15,prom:"107K",tof:"5h 40m"},
+  {tipo:"Pronóstico regional NOA",posts:3,prom:"117K",tof:"5h 47m"},
+  {tipo:"Frente frío / helada / nevada",posts:5,prom:"178K",tof:"8h 0m"},
+];
+
+// ─── SEÑALES ──────────────────────────────────────────────────────────────────
+const SIGNALS = [
+  {cat:"Meteorología geo+fecha",comp:"28 posts en 30 días. Presencia diaria. Ciclo 12–24h. Se agota sin reposición. Alerta activa multiplica x2–3 la visibilidad del pronóstico rutinario.",turno:"Mat 08–10h",patron:"[Ciudad]: alerta [tipo] para el [día] — [fenómeno concreto]",cons:5},
+  {cat:"Psicología / Autoestima",comp:"Categoría más eficiente. ~128K vis./post. Evergreen sin variación semanal. Permanencia en feed 1,5–2h por encima del promedio.",turno:"Ves 17–19h",patron:"[Autoridad nombrada]: '[comportamiento humano universal]'",cons:5},
+  {cat:"Economía / ANSES",comp:"Pico lunes y jueves. Ligado al calendario de cobros oficiales. El titular con cifra concreta (monto, fecha, porcentaje) duplica la tracción del título genérico.",turno:"Mat 09–10h",patron:"[Organismo]: cuánto cobran [grupo] en [mes] con [dato exacto]",cons:4},
+  {cat:"Judicial / Policial",comp:"Concentrada lunes–miércoles. Un fallo nacional con impacto local multiplica la distribución por 5–8x respecto a nota puramente local.",turno:"Mat 08–10h",patron:"[Organismo] [resolución concreta] que afecta a [grupo o provincia]",cons:4},
+  {cat:"Evergreen local NOA",comp:"Mayor permanencia promedio del corpus: 11h40m. Contenido no atado a fecha. Pico fin de semana. Sin competencia de medios nacionales en ángulo local.",turno:"Ves 17–19h · fin de semana",patron:"[Dato peculiar/récord] en Tucumán: [contexto o cifra]",cons:4},
+  {cat:"Gastronomía con autoridad",comp:"3 posts en período con visibilidades: 608K, 425K, 120K. El formato cita de chef nombrado con técnica concreta supera en 3x al post genérico de receta.",turno:"Ves 17–19h · Sáb–Dom",patron:"[Chef/médico nombrado]: '[producto] no se hace con X sino con [técnica]'",cons:3},
+  {cat:"Salud / Hábitos 60+",comp:"Segmento edad 60–65 años activa señales consistentes. Títulos con cifra etaria y hábito concreto tienen permanencia superior a 7h en feed.",turno:"Mat 09–11h · Ves 17–18h",patron:"A los [edad] hay que / no hay que [hábito] porque [consecuencia concreta]",cons:3},
+  {cat:"Turismo NOA",comp:"Sin competencia de medios nacionales en ángulo local. Señal creciente jueves–domingo. Patrimonio UNESCO y rutas patagónicas del Norte generan visibilidades sobre 100K.",turno:"Ves 17–19h · Sáb–Dom",patron:"[Destino NOA]: [actividad o atractivo] que [pocos conocen / vale la pena visitar]",cons:3},
+];
+
+const CONS_L = ["","Baja","Media-baja","Media","Alta","Máxima"];
+const CONS_BG = ["","#f0f2f5","#cfe3f7","#7ab8ef","#185FA5","#0a2540"];
+const CONS_TX = ["","#6b7a8e","#0c3460","#0a2540","#fff","#deeaf8"];
+
+// ─── RECOMENDACIONES ──────────────────────────────────────────────────────────
+const RECS = [
+  {turno:"Matutino · 08–10h",title:"Meteorología: publicar antes de las 9h con alerta activa",body:"Los posts con alerta activa (naranja/amarilla) promedian 248K vis. vs 107K del pronóstico rutinario. La ventana de distribución más alta es 08–09h los martes. El titular debe incluir tipo de fenómeno, provincias afectadas y fecha. Sin estos tres elementos, la visibilidad cae al tercio.",color:"#185FA5"},
+  {turno:"Matutino · 09–10h",title:"Economía: fecha de cobro y monto en el titular",body:"Los posts de ANSES, aguinaldo y vouchers con cifra concreta en el titular generan entre 133K y 433K de visibilidad. El titular sin dato específico ('cambios en jubilaciones') cae a 162K o menos. Priorizar lunes (apertura de semana) y jueves (cobros quincenales).",color:"#185FA5"},
+  {turno:"Matutino · 08–10h",title:"Judicial: encuadrar el impacto provincial en el primer párrafo",body:"El fallo Corte Suprema (1,22M, 1d3h feed) y Tribuna Segura (813K) muestran que la nota judicial local con proyección nacional multiplica x5–8 el alcance. El punto de distinción es el ángulo tucumano o NOA explicitado en el titular, no solo en el cuerpo.",color:"#185FA5"},
+  {turno:"Vespertino · 17–19h",title:"Psicología: publicar todos los días entre 17h y 19h",body:"La única categoría con tracción alta en todos los días de la semana, ambos turnos. ~128K vis./post. El formato con nombre de profesional (Boris Cyrulnik, médico o psicólogo con apellido) tiene mayor permanencia en feed. Sin nombre de autoridad, la visibilidad cae al promedio general.",color:"#7a4210"},
+  {turno:"Vespertino · fin de semana",title:"Turismo y gastronomía NOA: jueves a domingo",body:"El feed premia contenido de destinos y recetas regionales desde el jueves vespertino. La ruta Norte a 3800m (112K), UNESCO NOA (390K), postales nevada Tafí (203K) y receta pan árabe (608K) confirman el patrón. La ventana 16–19h sábado y domingo es la de mayor tracción de la semana en estas categorías.",color:"#7a4210"},
+  {turno:"Cualquier turno",title:"Evergreen local: publicar sin fecha para extender permanencia",body:"Los posts de Local NOA sin fecha en el titular tienen permanencia promedio de 11h40m (vs 5h40m del post de clima). El Mercado del Norte (1d18h, 391K), escultura Don Rojas (13h47m, 1,08M) y Museo de Arte (1d1h, 197K) confirman que el contenido de identidad local con fecha de apertura o hecho concreto se distribuye durante días.",color:"#0c3460"},
+];
+
+const OPPS = [
+  {opp:"Psicología matutina",ev:"Psicología mueve 897K con 7 posts en el período. Todos detectados en tarde. Sin posts matutinos de psicología en el corpus analizado.",acc:"Publicar 1 post de psicología/hábitos en franja 09–10h, 3 veces por semana.",pri:"Alta",priColor:"#185FA5"},
+  {opp:"Gastronomía regional entre semana",ev:"608K (pan árabe) y 425K (panqueques) generados por recetas genéricas. Sin recetas con ingrediente NOA (limón tucumano, cayote, humita, locro) en el corpus.",acc:"1 receta con producto regional por semana. Cita de cocinero o productor local con apellido en el titular.",pri:"Alta",priColor:"#185FA5"},
+  {opp:"Salud con número etario",ev:"459K (fortalecer piernas 65+) con 7h47m en feed. Solo 1 post del corpus usa número de edad en el titular. Patrón replicable.",acc:"1 post semanal de salud con franja etaria explícita y hábito concreto. Formato: 'A los X años...'",pri:"Media",priColor:"#2a7fcf"},
+  {opp:"Pronóstico NOA regional",ev:"117K (pronóstico fin de semana NOA: Jujuy, Salta, Catamarca, Tucumán). Solo 1 post con este encuadre regional amplio en el corpus.",acc:"Ampliar cobertura meteorológica del viernes al pronóstico del fin de semana para toda la región NOA.",pri:"Media",priColor:"#2a7fcf"},
+  {opp:"Judicial con impacto Tucumán",ev:"Fallo Corte Suprema (1,22M) sin ángulo tucumano explícito en el titular. Post de herencia millonaria Tucumán (240K, 17h feed) muestra que el localismo sostenido.",acc:"Para cada fallo o resolución nacional, identificar y explicitar el impacto en Tucumán o NOA en el titular.",pri:"Alta",priColor:"#185FA5"},
+];
+
+// ─── RENDER HEATMAP ───────────────────────────────────────────────────────────
+let turnoS = 'ambos', dayS = 'all';
+function buildHM(data, tbodyId){
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = '';
+  CATS.forEach((cat,ci) => {
+    const tr = document.createElement('tr');
+    const td0 = document.createElement('td');
+    td0.className='cat-td'; td0.textContent=cat; tr.appendChild(td0);
+    DAYS.forEach((day,di) => {
+      const d = data[ci];
+      const lvl = d.s[di], hora = d.h[di], nota = d.n[di];
+      const td = document.createElement('td');
+      if(dayS !== 'all' && dayS !== DAY_IDS[di]){
+        td.innerHTML=`<div class="hm-cell lvl-0" style="opacity:.15"><span class="cell-hour" style="color:var(--h0-t)">—</span></div>`;
+        tr.appendChild(td); return;
+      }
+      const div = document.createElement('div');
+      div.className=`hm-cell lvl-${lvl}`;
+      Object.assign(div.dataset,{cat,day,lvl,hora,nota});
+      div.innerHTML = lvl===0 ? `<span class="cell-hour">—</span>` :
+        `<span class="cell-hour">${hora}</span><span class="cell-lbl">${LVL_L[lvl]}</span>`;
+      div.addEventListener('mouseenter',showTip);
+      div.addEventListener('mouseleave',hideTip);
+      div.addEventListener('mousemove',moveTip);
+      td.appendChild(div); tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+const tip = document.getElementById('tooltip');
+function showTip(e){
+  const d=e.currentTarget.dataset;
+  document.getElementById('tt-title').textContent=`${d.cat} · ${d.day}`;
+  document.getElementById('tt-detail').innerHTML=`Tracción: ${LVL_L[d.lvl]} · Ventana: ${d.hora}<br><span style="color:#ccc;font-family:var(--sans);font-size:10px">${d.nota}</span>`;
+  tip.classList.add('visible');
+}
+function hideTip(){tip.classList.remove('visible')}
+function moveTip(e){tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-10)+'px'}
+
+function buildRank(){
+  const scores = CATS.map((cat,ci) => {
+    let t=0;
+    DAYS.forEach((_,di) => {
+      if(dayS==='all'||dayS===DAY_IDS[di]){
+        if(turnoS==='ambos'||turnoS==='mat') t+=MAT[ci].s[di];
+        if(turnoS==='ambos'||turnoS==='ves') t+=VES[ci].s[di];
+      }
+    });
+    return {cat,t};
+  }).sort((a,b)=>b.t-a.t);
+  const mx = scores[0].t||1;
+  document.getElementById('rank-list').innerHTML = scores.map((s,i)=>
+    `<li class="rank-item"><span class="rank-num">${i+1}</span><span class="rank-cat">${s.cat}</span><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(s.t/mx*100)}%"></div></div><span class="rank-score">${s.t}</span></li>`
+  ).join('');
+}
+
+function buildComp(){
+  const both = ['mat','ves'].map(turno => {
+    const src = turno==='mat'?MAT:VES;
+    return CATS.map((cat,ci) => {
+      let sum=0,cnt=0;
+      DAYS.forEach((_,di)=>{ if(dayS==='all'||dayS===DAY_IDS[di]){sum+=src[ci].s[di];cnt++;} });
+      return {cat,avg:cnt?sum/cnt:0};
+    }).sort((a,b)=>b.avg-a.avg);
+  });
+  const [matI,vesI]=both;
+  let html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html+='<tr><td style="font-family:var(--mono);font-size:10px;color:var(--blue-400);padding:2px 6px 6px 0;text-transform:uppercase;letter-spacing:.06em">Matutino</td><td style="font-family:var(--mono);font-size:10px;color:#c67a30;padding:2px 0 6px;text-transform:uppercase;letter-spacing:.06em">Vespertino</td></tr>';
+  for(let i=0;i<CATS.length;i++){
+    const m=matI[i],v=vesI[i];
+    const cp=(a)=>{ if(a.avg>=2.5)return'cpill-hi'; if(a.avg>=1.5)return'cpill-mid'; if(a.avg>=0.5)return'cpill-lo'; return'cpill-no'; };
+    const cl=(a)=>{ if(a.avg>=2.5)return'Alta'; if(a.avg>=1.5)return'Media'; if(a.avg>=0.5)return'Baja'; return'—'; };
+    html+=`<tr><td style="padding:4px 6px 4px 0;border-bottom:1px solid var(--rule)"><span style="font-size:11px;color:var(--ink-mid)">${m.cat}</span> <span class="cpill ${cp(m)}">${cl(m)}</span></td><td style="padding:4px 0;border-bottom:1px solid var(--rule)"><span style="font-size:11px;color:var(--ink-mid)">${v.cat}</span> <span class="cpill ${cp(v)}">${cl(v)}</span></td></tr>`;
+  }
+  html+='</table>';
+  document.getElementById('comp-left').innerHTML=html;
+}
+
+function render(){
+  buildHM(MAT,'hm-mat-body'); buildHM(VES,'hm-ves-body');
+  buildRank(); buildComp();
+}
+
+function setTurno(t){
+  turnoS=t;
+  ['ambos','mat','ves'].forEach(id=>document.getElementById('btn-'+id).classList.remove('active'));
+  document.getElementById('btn-'+t).classList.add('active');
+  const matEls=[document.getElementById('hm-mat-hd'),document.getElementById('hm-mat-tbl')];
+  const vesEls=[document.getElementById('hm-ves-hd'),document.getElementById('hm-ves-tbl')];
+  if(t==='mat'){matEls.forEach(e=>e.classList.remove('hidden'));vesEls.forEach(e=>e.classList.add('hidden'));}
+  else if(t==='ves'){vesEls.forEach(e=>e.classList.remove('hidden'));matEls.forEach(e=>e.classList.add('hidden'));}
+  else{[...matEls,...vesEls].forEach(e=>e.classList.remove('hidden'));}
+  render();
+}
+
+function setDay(d){
+  dayS=d;
+  ['all','lun','mar','mie','jue','vie','sab','dom'].forEach(id=>{ const el=document.getElementById('btn-'+id); if(el)el.classList.remove('active'); });
+  document.getElementById('btn-'+d).classList.add('active');
+  render();
+}
+
+// ─── TOP POSTS ────────────────────────────────────────────────────────────────
+const CAT_COLORS = {
+  meteorologia:['#cfe3f7','#0c3460'],judicial:['#FCEBEB','#A32D2D'],
+  economia:['#EAF3DE','#27500A'],gastronomia:['#FAEEDA','#633806'],
+  salud:['#EEEDFE','#3C3489'],local:['#f0f2f5','#3a4452'],
+  evergreen:['#E1F5EE','#085041'],todas:['#f0f2f5','#6b7a8e']
+};
+
+let postFilter='todas';
+function filterPosts(f,btn){
+  postFilter=f;
+  document.querySelectorAll('#cat-filter .btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildPosts();
+}
+
+function buildPosts(){
+  const filtered = postFilter==='todas' ? POSTS : POSTS.filter(p=>p.cat===postFilter);
+  const [bg,tx]=CAT_COLORS[postFilter]||CAT_COLORS.todas;
+  document.getElementById('posts-body').innerHTML = filtered.map((p,i)=>
+    `<tr><td class="td-num">${i+1}</td>
+    <td class="td-title">${p.t}</td>
+    <td><span class="cat-pill" style="background:${CAT_COLORS[p.cat]?CAT_COLORS[p.cat][0]:'#f0f2f5'};color:${CAT_COLORS[p.cat]?CAT_COLORS[p.cat][1]:'#3a4452'}">${p.clabel}</span></td>
+    <td class="td-vis">${p.vis}</td>
+    <td class="td-tof">${p.tof}</td></tr>`
+  ).join('');
+}
+
+// ─── PERMANENCIA ─────────────────────────────────────────────────────────────
+function buildPerm(){
+  const maxMin = Math.max(...PERM_POSTS.map(p=>tofToMin(p.tof)));
+  document.getElementById('perm-body').innerHTML = PERM_POSTS.map((p,i)=>{
+    const pct = Math.round(tofToMin(p.tof)/maxMin*100);
+    return `<tr><td style="text-align:center;font-family:var(--mono);font-size:11px;color:var(--ink-faint)">${i+1}</td>
+    <td style="font-size:12px;color:var(--ink)">${p.t}</td>
+    <td><span class="cat-pill" style="background:#f0f2f5;color:#3a4452;font-size:10px">${p.cat}</span></td>
+    <td style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--blue-700);font-weight:500">${p.tof}</td>
+    <td style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--ink-muted)">${p.vis}</td></tr>`;
+  }).join('');
+
+  const maxPCat = Math.max(...PERM_CATS.map(c=>c.mins));
+  document.getElementById('perm-cat-body').innerHTML = PERM_CATS.map(c=>{
+    const pct=Math.round(c.mins/maxPCat*100);
+    return `<tr><td style="font-size:12px;font-weight:500;color:var(--ink)">${c.cat}</td>
+    <td style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--blue-700);font-weight:500">${c.prom}</td>
+    <td style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--ink-muted)">${c.max}</td>
+    <td style="text-align:right"><div class="perm-bar-wrap"><div class="perm-bar" style="width:${pct}%;background:var(--blue-600)"></div></div></td>
+    <td style="text-align:right;font-family:var(--mono);font-size:11px;color:var(--ink-faint)">${c.posts}</td></tr>`;
+  }).join('');
+}
+
+// ─── CLIMA ────────────────────────────────────────────────────────────────────
+function buildClima(){
+  const maxVis = 906;
+  document.getElementById('clima-body').innerHTML = CLIMA_DIAS.map(d=>{
+    const promN = parseInt(d.prom.replace('K',''));
+    const pct = Math.round(promN/maxVis*100);
+    return `<tr>
+    <td><span class="dot" style="background:${d.color}"></span>${d.dia}</td>
+    <td>${d.posts}</td>
+    <td style="color:var(--blue-700);font-weight:500">${d.prom}</td>
+    <td>${d.max}</td>
+    <td>${d.tof}</td></tr>`;
+  }).join('');
+
+  document.getElementById('clima-tipo-body').innerHTML = CLIMA_TIPOS.map(t=>
+    `<tr><td style="font-size:12px;color:var(--ink-mid)">${t.tipo}</td>
+    <td>${t.posts}</td>
+    <td style="color:var(--blue-700);font-weight:500">${t.prom}</td>
+    <td>${t.tof}</td></tr>`
+  ).join('');
+}
+
+// ─── SEÑALES ─────────────────────────────────────────────────────────────────
+function buildSignals(){
+  document.getElementById('signals-body').innerHTML = SIGNALS.map((s,i)=>
+    `<tr style="${i%2===1?'background:#fafbfc':''}">
+    <td style="font-size:12px;font-weight:500;color:var(--ink)">${s.cat}</td>
+    <td style="font-size:11px;color:var(--ink-muted)">${s.comp}</td>
+    <td style="font-size:11px;color:var(--ink-muted)">${s.turno}</td>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--ink-muted)">${s.patron}</td>
+    <td style="text-align:center"><span class="cons-pill" style="background:${CONS_BG[s.cons]};color:${CONS_TX[s.cons]}">${CONS_L[s.cons]}</span></td></tr>`
+  ).join('');
+}
+
+// ─── RECOMENDACIONES ─────────────────────────────────────────────────────────
+function buildRecs(){
+  document.getElementById('rec-grid').innerHTML = RECS.map(r=>
+    `<div class="rec-card" style="border-left-color:${r.color}">
+    <div class="rec-turno">${r.turno}</div>
+    <div class="rec-title">${r.title}</div>
+    <div class="rec-body">${r.body}</div></div>`
+  ).join('');
+
+  document.getElementById('opp-body').innerHTML = OPPS.map((o,i)=>
+    `<tr style="${i%2===1?'background:#fafbfc':''}">
+    <td style="font-size:12px;font-weight:500;color:var(--ink)">${o.opp}</td>
+    <td style="font-size:11px;color:var(--ink-muted)">${o.ev}</td>
+    <td style="font-size:11px;color:var(--ink-muted)">${o.acc}</td>
+    <td style="text-align:center"><span class="cons-pill" style="background:${o.priColor};color:#fff">${o.pri}</span></td></tr>`
+  ).join('');
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────────────────
+function showSection(id, tab){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  tab.classList.add('active');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+render();
+buildPosts();
+buildPerm();
+buildClima();
+buildSignals();
+buildRecs();
+</script>
+</body>
+</html>
